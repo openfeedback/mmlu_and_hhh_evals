@@ -7,6 +7,8 @@ from categories import subcategories, categories
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 from transformers import AutoModelForCausalLM
 import time
+from superhf.experiment.evaluations.model import load_eval_model_and_tokenizer
+
 
 choices = ["A", "B", "C", "D"]
 
@@ -70,11 +72,12 @@ def eval(args, subject, model, tokenizer, dev_df, test_df):
         #     input_ids=input_ids, decoder_input_ids=decoder_input_ids
         # ).logits.flatten()
 
-        decoder_input_ids = tokenizer("", return_tensors="pt").input_ids.cuda()
-        decoder_input_ids = model._shift_right(decoder_input_ids)
+        # decoder_input_ids = tokenizer("", return_tensors="pt").input_ids.cuda()
+        # decoder_input_ids = model._shift_right(decoder_input_ids)
         logits = model(
             input_ids=input_ids
-        ).logits.flatten()
+        ).logits
+        logits = logits[:, -1, :].flatten() 
 
         probs = (
             torch.nn.functional.softmax(
@@ -108,21 +111,22 @@ def eval(args, subject, model, tokenizer, dev_df, test_df):
 
 
 def main(args):
-
+    # device = 'cuda:0'
     # model = AutoModelForSeq2SeqLM.from_pretrained(args.model)
-    model = AutoModelForCausalLM.from_pretrained(args.model)
-    tokenizer = AutoTokenizer.from_pretrained(args.model)
-    heads_per_gpu = len(model.encoder.block) // args.ngpu
-    device_map = {
-        gpu: list(
-            range(
-                0 + (gpu * heads_per_gpu),
-                (0 + (gpu * heads_per_gpu)) + heads_per_gpu,
-            )
-        )
-        for gpu in range(args.ngpu)
-    }
-    model.parallelize(device_map)
+    # model = AutoModelForCausalLM.from_pretrained(args.model).to(device)
+    # tokenizer = AutoTokenizer.from_pretrained(args.model)
+    # heads_per_gpu = len(model.encoder.block) // args.ngpu
+    # device_map = {
+    #     gpu: list(
+    #         range(
+    #             0 + (gpu * heads_per_gpu),
+    #             (0 + (gpu * heads_per_gpu)) + heads_per_gpu,
+    #         )
+    #     )
+    #     for gpu in range(args.ngpu)
+    # }
+    # model.parallelize(device_map)
+    model, tokenizer = load_eval_model_and_tokenizer(args.model, verbose=True)
     model.eval()
     subjects = sorted(
         [
@@ -185,14 +189,14 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--ntrain", "-k", type=int, default=5)
-    parser.add_argument("--ngpu", "-g", type=int, default=2)
+    parser.add_argument("--ngpu", "-g", type=int, default=1)
     parser.add_argument("--data_dir", "-d", type=str, default="data")
     parser.add_argument("--save_dir", "-s", type=str, default="results")
     parser.add_argument(
         "--model",
         "-m",
         type=str,
-        default="google/flan-t5-small",
+        default="EleutherAI/gpt-neo-125m",
     )
     args = parser.parse_args()
     main(args)
