@@ -2,3 +2,4 @@ data/
 results/
 data.tar
 __pycache__
+*.swp

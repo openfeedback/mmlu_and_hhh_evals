@@ -7,8 +7,7 @@ from categories import subcategories, categories
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 from transformers import AutoModelForCausalLM
 import time
-from superhf.experiment.evaluations.model import load_eval_model_and_tokenizer
-
+from utils import load_eval_model_and_tokenizer
 
 choices = ["A", "B", "C", "D"]
 
@@ -187,7 +186,7 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.argumentparser()
     parser.add_argument("--ntrain", "-k", type=int, default=5)
     parser.add_argument("--ngpu", "-g", type=int, default=1)
     parser.add_argument("--data_dir", "-d", type=str, default="data")
