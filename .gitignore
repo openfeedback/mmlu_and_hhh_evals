@@ -4,4 +4,5 @@ data.tar
 __pycache__
 *.swp
 batch_outputs/
-
+hhh_data/
+hhh_results/
