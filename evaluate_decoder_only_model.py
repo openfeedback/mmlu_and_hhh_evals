@@ -82,10 +82,10 @@ def eval(args, subject, model, tokenizer, dev_df, test_df):
             torch.nn.functional.softmax(
                 torch.tensor(
                     [
-                        logits[tokenizer(" A").input_ids[0]],
-                        logits[tokenizer(" B").input_ids[0]],
-                        logits[tokenizer(" C").input_ids[0]],
-                        logits[tokenizer(" D").input_ids[0]],
+                        logits[tokenizer("A").input_ids[0]],
+                        logits[tokenizer("B").input_ids[0]],
+                        logits[tokenizer("C").input_ids[0]],
+                        logits[tokenizer("D").input_ids[0]],
                     ]
                 ),
                 dim=0,
