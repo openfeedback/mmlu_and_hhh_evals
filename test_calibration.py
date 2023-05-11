@@ -96,7 +96,7 @@ if __name__ == "__main__":
 
         plt.xlabel('P(answer)')
         plt.ylabel('P(correct)')
-        plt.title('Calibration Curve')
+        plt.title(f'Calibration Curve of {model.split("/")[-1]}')
         plt.savefig(f"{dir}/{model.split('/')[1]}_calibration.png")
         plt.clf()
         # plt.show()
