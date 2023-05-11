@@ -4,7 +4,7 @@ import argparse
 import os
 import csv
 
-if __name__ == "__main__":
+def create_dataset_from_args(args):
     def t(example):
         i = random.random()
         if i < 0.5:
@@ -17,11 +17,7 @@ if __name__ == "__main__":
             example['answer'] = "B"
         return example
     
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--save_dir", "-s", type=str, default="hhh_data")
-    parser.add_argument("--n_shots", "-n", type=int, default=4)
-    args = parser.parse_args()
-
+    random.seed(args.seed)
     harmless = load_dataset("HuggingFaceH4/hhh_alignment", "harmless")['test']
     helpful = load_dataset("HuggingFaceH4/hhh_alignment", "helpful")['test']
     honest = load_dataset("HuggingFaceH4/hhh_alignment", "honest")['test']
@@ -47,8 +43,6 @@ if __name__ == "__main__":
     honest_test = honest['train']
 
 
-
-
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
     if not os.path.exists(os.path.join(args.save_dir, "dev")):
@@ -62,4 +56,16 @@ if __name__ == "__main__":
     helpful_test.to_csv(os.path.join(args.save_dir,"test", "helpful_test.csv"), header=False, sep=",",quotechar='"',index=False, quoting=csv.QUOTE_ALL)
     honest_dev.to_csv(os.path.join(args.save_dir,"dev", "honest_dev.csv"), header=False, sep=",",quotechar='"',index=False, quoting=csv.QUOTE_ALL)
     honest_test.to_csv(os.path.join(args.save_dir,"test", "honest_test.csv"), header=False, sep=",",quotechar='"',index=False, quoting=csv.QUOTE_ALL)
+
+if __name__ == "__main__":
+
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--save_dir", "-s", type=str, default="hhh_data")
+    parser.add_argument("--n_shots", "-n", type=int, default=3)
+    parser.add_argument("--seed", "-i", type=int, default=42)
+    args = parser.parse_args()
+
+    create_dataset_from_args(args)
+    
 

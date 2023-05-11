@@ -5,10 +5,13 @@ import numpy as np
 import pandas as pd
 # from categories import subcategories, categories
 from hhh_categories import subcategories, categories
+from hhh_create_dataset import create_dataset_from_args
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 from transformers import AutoModelForCausalLM
 import time
 from utils import load_eval_model_and_tokenizer
+from copy import deepcopy
+
 
 # choices = ["A", "B", "C", "D"]
 choices = ["A", "B"]
@@ -197,8 +200,9 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ntrain", "-k", type=int, default=5)
+    parser.add_argument("--ntrain", "-k", type=int, default=3)
     parser.add_argument("--ngpu", "-g", type=int, default=1)
+    parser.add_argument("--seed", "-i", type=int, default=42)
     parser.add_argument("--data_dir", "-d", type=str, default="hhh_data")
     parser.add_argument("--save_dir", "-s", type=str, default="hhh_results")
     parser.add_argument(
