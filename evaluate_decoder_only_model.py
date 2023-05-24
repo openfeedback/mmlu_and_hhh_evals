@@ -65,14 +65,6 @@ def eval(args, subject, model, tokenizer, dev_df, test_df):
 
         label = test_df.iloc[i, test_df.shape[1] - 1]
 
-        # decoder_input_ids = tokenizer("", return_tensors="pt").input_ids.cuda()
-        # decoder_input_ids = model._shift_right(decoder_input_ids)
-        # logits = model(
-        #     input_ids=input_ids, decoder_input_ids=decoder_input_ids
-        # ).logits.flatten()
-
-        # decoder_input_ids = tokenizer("", return_tensors="pt").input_ids.cuda()
-        # decoder_input_ids = model._shift_right(decoder_input_ids)
         logits = model(
             input_ids=input_ids
         ).logits
@@ -110,22 +102,7 @@ def eval(args, subject, model, tokenizer, dev_df, test_df):
 
 
 def main(args):
-    # device = 'cuda:0'
-    # model = AutoModelForSeq2SeqLM.from_pretrained(args.model)
-    # model = AutoModelForCausalLM.from_pretrained(args.model).to(device)
-    # tokenizer = AutoTokenizer.from_pretrained(args.model)
-    # heads_per_gpu = len(model.encoder.block) // args.ngpu
-    # device_map = {
-    #     gpu: list(
-    #         range(
-    #             0 + (gpu * heads_per_gpu),
-    #             (0 + (gpu * heads_per_gpu)) + heads_per_gpu,
-    #         )
-    #     )
-    #     for gpu in range(args.ngpu)
-    # }
-    # model.parallelize(device_map)
-    
+   
     # Handle revisions with org/model-name@revision syntax
     model_specification = args.model
     model_path = model_specification.split("@")[0]
@@ -137,7 +114,6 @@ def main(args):
         model_path, verbose=True, revision=revision
     )
     model_save_handle = os.path.join(model_path.split('/')[-2], '/', model_path.split('/')[-1])
-    # model, tokenizer = load_eval_model_and_tokenizer(args.model, verbose=True)
     model.eval()
     subjects = sorted(
         [

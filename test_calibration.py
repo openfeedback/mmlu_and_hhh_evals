@@ -9,12 +9,12 @@ from calib_tools import rmsce
 import argparse
 
 ANSWER_MAP = {'A': 0, 'B': 1, 'C': 2, 'D': 3}
-LABELS = ["Llama", "Alpaca", "SuperHF", "RLHF"]
+LABELS = ["label_1", "label_2", "label_3", "label_4"]
 MODELS = [
-    "results_llama_hf_latest",
-    "results_llama_model",
-    "results_gmukobi",
-    "results_",
+    "model_1",
+    "model_2",
+    "model_3",
+    "model_4",
 ]
 COLORS = [0, 1, 4, 3]
 DO_RESCALE=True
@@ -23,7 +23,6 @@ RESCALE_CONST=0.25
 
 def rescale_softmax_with_temperature(probs, temp, rescale_const):
     probs = np.array(probs)
-    # return softmax((probs + rescale_const)/temp)
     return softmax(np.log(probs)/temp)
 
 def compute_calibration_curve(probs, ans):
@@ -34,11 +33,8 @@ def compute_calibration_curve(probs, ans):
         upper = diff_bins[i + 1]
         selected_indices = np.where((probs >= lower) & (probs < upper))
         correct_num = (ans[selected_indices[0]] == selected_indices[1]).sum()
-        # selected_human_prefs = ans[selected_indices]
 
         if len(selected_indices) > 0:
-            # correct_preds = np.sum(selected_human_prefs)
-            # accuracy = correct_preds / len(selected_indices)
             p_correct = correct_num/len(selected_indices[0])
         else:
             p_correct = None
@@ -55,35 +51,17 @@ if __name__ == "__main__":
     k = args.n_shots
 
     base_dir = "results"
-    # base_models = [f.split("results_")[1] for f in os.listdir(base_dir) if "results" in f]
     base_models = [f.split("results_")[1] for f in MODELS if "results" in f]
     models = [os.listdir(f"{base_dir}/results_{base_model}") for base_model in base_models]
     full_model_names = [f"{base_model}/{sub_model}" for base_model, sub_models in zip(base_models, models) for sub_model in sub_models]
     print(full_model_names)
 
     num_plots = len(full_model_names)
-    ######### Code for a balanced grid of subplots######
-    # Calculate number of rows and columns
-    # cols = round(math.sqrt(num_plots))
-    # rows = cols
-    # positions = range(1, num_plots + 1)
-
-    # If not a perfect square, adjust rows and columns
-    # if cols**2 < num_plots:
-    #     rows += 1
-    # if rows * (cols - 1) >= num_plots:
-    #     cols -= 1
-    # Swap rows and cols
-    # tmp = rows
-    # rows = cols
-    # cols = tmp
-    #####################################################
 
     rows = 1
     cols = num_plots
     positions = range(1, num_plots + 1)
 
-    # sns.set_theme(palette='colorblind')
     sns.set_theme(context="paper", font_scale=1.5, style="whitegrid")
     palette = sns.color_palette('colorblind')
     
@@ -135,8 +113,6 @@ if __name__ == "__main__":
         print("{} overall conf: {:.3f}, acc: {:.3f}, RMS: {:.3f}".format(model, avg_max_prob, acc, rms_ce))
 
         bins, accuracies = compute_calibration_curve(
-            # np.array(all_confs), 
-            # np.array(all_cors)
             np.array(all_probs),
             np.array(all_ans)
         )
@@ -151,8 +127,6 @@ if __name__ == "__main__":
         ax.bar(bins, accuracies, width=0.1, edgecolor="black", label=f"{LABELS[k]}", color=palette[COLORS[k]])
         ax.text(0.25, 0.65, f'MSE:{mse:.3f}', fontsize=14, fontweight='semibold', color='black', horizontalalignment='center')
 
-        # plt.plot(bins, accuracies, linestyle='--', linewidth=3)
-
 
         x_func = np.linspace(0, 1, 1000)
         y_func = x_func
@@ -164,22 +138,7 @@ if __name__ == "__main__":
         ax.set_ylabel('P(correct)')
         ax.legend()
         ax.set_aspect('equal')
-        # ax.title(f'Calibration Curve of {model.split("/")[-1]}')
-        # plt.savefig(f"{dir}/{model.split('/')[1]}_calibration.png")
-        # plt.clf()
-        # plt.show()
 
-        # plt.scatter(bins, accuracies, label=f"{model.split('/')[-1]}")
-        # plt.plot(bins, accuracies, linestyle='--', linewidth=3)
-
-    # x_func = np.linspace(0, 1, 1000)
-    # y_func = x_func
-    # plt.plot(x_func, y_func, color='black', linestyle='--', linewidth=3)
-
-    # plt.xlabel('P(answer)')
-    # plt.ylabel('P(correct)')
-    # plt.title(f'Calibration Curves')
-    # plt.legend()
     plt.savefig(f"{base_dir}/calibration_curves")
 
     # Plot MSE

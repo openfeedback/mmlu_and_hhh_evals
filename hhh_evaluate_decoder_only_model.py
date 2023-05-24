@@ -13,7 +13,6 @@ from utils import load_eval_model_and_tokenizer
 from copy import deepcopy
 
 
-# choices = ["A", "B", "C", "D"]
 choices = ["A", "B"]
 
 
@@ -71,14 +70,6 @@ def eval(args, subject, model, tokenizer, dev_df, test_df):
 
         label = test_df.iloc[i, test_df.shape[1] - 1]
 
-        # decoder_input_ids = tokenizer("", return_tensors="pt").input_ids.cuda()
-        # decoder_input_ids = model._shift_right(decoder_input_ids)
-        # logits = model(
-        #     input_ids=input_ids, decoder_input_ids=decoder_input_ids
-        # ).logits.flatten()
-
-        # decoder_input_ids = tokenizer("", return_tensors="pt").input_ids.cuda()
-        # decoder_input_ids = model._shift_right(decoder_input_ids)
         logits = model(
             input_ids=input_ids
         ).logits
@@ -90,8 +81,6 @@ def eval(args, subject, model, tokenizer, dev_df, test_df):
                     [
                         logits[tokenizer("A", add_special_tokens=False).input_ids[0]],
                         logits[tokenizer("B", add_special_tokens=False).input_ids[0]],
-                        # logits[tokenizer("C", add_special_tokens=False).input_ids[0]],
-                        # logits[tokenizer("D", add_special_tokens=False).input_ids[0]],
                     ]
                 ),
                 dim=0,
@@ -100,7 +89,6 @@ def eval(args, subject, model, tokenizer, dev_df, test_df):
             .cpu()
             .numpy()
         )
-        # pred = {0: "A", 1: "B", 2: "C", 3: "D"}[np.argmax(probs)]
         pred = {0: "A", 1: "B"}[np.argmax(probs)]
 
         cor = pred == label
@@ -120,7 +108,6 @@ def eval(args, subject, model, tokenizer, dev_df, test_df):
 
 
 def main(args):
-    # model, tokenizer = load_eval_model_and_tokenizer(args.model, verbose=True)
     model_specification = args.model
     model_path = model_specification.split("@")[0]
     try:
@@ -202,7 +189,6 @@ def main(args):
         cat_acc = np.mean(np.concatenate(cat_cors[cat]))
         cat_score = np.mean(np.concatenate(cat_scores[cat]))
         print("Average accuracy {:.3f} Average Score: {:.3f} - {}".format(cat_acc, cat_score, cat))
-        # print("Average accuracy {:.3f} - {}".format(cat_acc, cat))
     weighted_acc = np.mean(np.concatenate(all_cors))
     weighted_score = np.mean(np.concatenate(all_scores))
     print("Average accuracy: {:.3f} Average score: {:.3f}".format(weighted_acc, weighted_score))
