@@ -1,11 +1,30 @@
 import os
+import math
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy.special import softmax
 from calib_tools import rmsce
 import argparse
 
 ANSWER_MAP = {'A': 0, 'B': 1, 'C': 2, 'D': 3}
+LABELS = ["Llama", "Alpaca", "SuperHF", "RLHF"]
+MODELS = [
+    "results_llama_hf_latest",
+    "results_llama_model",
+    "results_gmukobi",
+    "results_",
+]
+COLORS = [0, 1, 4, 3]
+DO_RESCALE=True
+TEMPERATURE=1.0
+RESCALE_CONST=0.25
+
+def rescale_softmax_with_temperature(probs, temp, rescale_const):
+    probs = np.array(probs)
+    # return softmax((probs + rescale_const)/temp)
+    return softmax(np.log(probs)/temp)
 
 def compute_calibration_curve(probs, ans):
     diff_bins = np.arange(0, 1.1, 0.1)
@@ -30,17 +49,52 @@ def compute_calibration_curve(probs, ans):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--n_shots", type=int, default=3)
+    parser.add_argument("--temp", type=float, default=TEMPERATURE)
     args = parser.parse_args()
 
     k = args.n_shots
 
     base_dir = "results"
-    base_models = [f.split("results_")[1] for f in os.listdir(base_dir) if "results" in f]
+    # base_models = [f.split("results_")[1] for f in os.listdir(base_dir) if "results" in f]
+    base_models = [f.split("results_")[1] for f in MODELS if "results" in f]
     models = [os.listdir(f"{base_dir}/results_{base_model}") for base_model in base_models]
     full_model_names = [f"{base_model}/{sub_model}" for base_model, sub_models in zip(base_models, models) for sub_model in sub_models]
     print(full_model_names)
 
-    for model in full_model_names:
+    num_plots = len(full_model_names)
+    ######### Code for a balanced grid of subplots######
+    # Calculate number of rows and columns
+    # cols = round(math.sqrt(num_plots))
+    # rows = cols
+    # positions = range(1, num_plots + 1)
+
+    # If not a perfect square, adjust rows and columns
+    # if cols**2 < num_plots:
+    #     rows += 1
+    # if rows * (cols - 1) >= num_plots:
+    #     cols -= 1
+    # Swap rows and cols
+    # tmp = rows
+    # rows = cols
+    # cols = tmp
+    #####################################################
+
+    rows = 1
+    cols = num_plots
+    positions = range(1, num_plots + 1)
+
+    # sns.set_theme(palette='colorblind')
+    sns.set_theme(context="paper", font_scale=1.5, style="whitegrid")
+    palette = sns.color_palette('colorblind')
+    
+    fig = plt.figure(1, figsize=(15,5))
+    fig.suptitle('MMLU Calibration')
+    plt.subplots_adjust(wspace=0.25, left=0.05, right=.95, top=1, bottom=0)
+
+
+    mses = []
+
+    for k, model in enumerate(full_model_names):
         dir = os.path.join(base_dir, "results_{}".format(model))
         fnames = [f for f in os.listdir(dir) if ".csv" in f]
 
@@ -64,6 +118,8 @@ if __name__ == "__main__":
                 probs = [df["{}_choice{}_probs".format(model, choice)][i] for choice in ["A", "B", "C", "D"]]
 
                 all_ans.append(ANSWER_MAP[df[correct_answer_column][i]])
+                if DO_RESCALE:
+                    prob = rescale_softmax_with_temperature(probs, args.temp, RESCALE_CONST)
                 all_probs.append(probs)
                 
                 cors.append(int(df["{}_correct".format(model)][i]))
@@ -87,17 +143,52 @@ if __name__ == "__main__":
         print(bins)
         print(accuracies)
 
-        plt.scatter(bins, accuracies)
-        plt.plot(bins, accuracies, linestyle='--', linewidth=3)
+        mse = ((accuracies-bins)**2).mean(where=~np.isnan(accuracies))
+        mses.append(mse)
+        print(mse)
+
+        ax = fig.add_subplot(rows, cols, positions[k])
+        ax.bar(bins, accuracies, width=0.1, edgecolor="black", label=f"{LABELS[k]}", color=palette[COLORS[k]])
+        ax.text(0.25, 0.65, f'MSE:{mse:.3f}', fontsize=14, fontweight='semibold', color='black', horizontalalignment='center')
+
+        # plt.plot(bins, accuracies, linestyle='--', linewidth=3)
+
 
         x_func = np.linspace(0, 1, 1000)
         y_func = x_func
-        plt.plot(x_func, y_func, color='black', linestyle='--', linewidth=3)
+        ax.plot(x_func, y_func, color='black', linestyle='--', linewidth=3, label="$y=x$")
+        ax.set_xlim(0,1)
+        ax.set_ylim(0,1)
 
-        plt.xlabel('P(answer)')
-        plt.ylabel('P(correct)')
-        plt.title(f'Calibration Curve of {model.split("/")[-1]}')
-        plt.savefig(f"{dir}/{model.split('/')[1]}_calibration.png")
-        plt.clf()
+        ax.set_xlabel('P(answer)')
+        ax.set_ylabel('P(correct)')
+        ax.legend()
+        ax.set_aspect('equal')
+        # ax.title(f'Calibration Curve of {model.split("/")[-1]}')
+        # plt.savefig(f"{dir}/{model.split('/')[1]}_calibration.png")
+        # plt.clf()
         # plt.show()
 
+        # plt.scatter(bins, accuracies, label=f"{model.split('/')[-1]}")
+        # plt.plot(bins, accuracies, linestyle='--', linewidth=3)
+
+    # x_func = np.linspace(0, 1, 1000)
+    # y_func = x_func
+    # plt.plot(x_func, y_func, color='black', linestyle='--', linewidth=3)
+
+    # plt.xlabel('P(answer)')
+    # plt.ylabel('P(correct)')
+    # plt.title(f'Calibration Curves')
+    # plt.legend()
+    plt.savefig(f"{base_dir}/calibration_curves")
+
+    # Plot MSE
+    plt.clf()
+    plt.rcParams.update(plt.rcParamsDefault)
+    sns.set_theme(context="paper", font_scale=1.5, style="whitegrid")
+    plt.figure()
+    plt.bar(LABELS, mses, color=palette[:len(LABELS)])
+    plt.title("MSE of calibration against $y=x$")
+    plt.xlabel("Model")
+    plt.ylabel("MSE")
+    plt.savefig(f"{base_dir}/mse_chart")

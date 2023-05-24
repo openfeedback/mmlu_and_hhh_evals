@@ -120,8 +120,18 @@ def eval(args, subject, model, tokenizer, dev_df, test_df):
 
 
 def main(args):
-    model, tokenizer = load_eval_model_and_tokenizer(args.model, verbose=True)
+    # model, tokenizer = load_eval_model_and_tokenizer(args.model, verbose=True)
+    model_specification = args.model
+    model_path = model_specification.split("@")[0]
+    try:
+        revision = model_specification.split("@")[1]
+    except IndexError:
+        revision = None
+        model, tokenizer = load_eval_model_and_tokenizer(
+            model_path, verbose=True, revision=revision
+        )
     model.eval()
+    model_save_handle = os.path.join(model_path.split('/')[-2], '/', model_path.split('/')[-1])
     subjects = sorted(
         [
             f.split("_test.csv")[0]
@@ -132,8 +142,8 @@ def main(args):
 
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
-    if not os.path.exists(os.path.join(args.save_dir, "results_{}".format(args.model))):
-        os.makedirs(os.path.join(args.save_dir, "results_{}".format(args.model)))
+    if not os.path.exists(os.path.join(args.save_dir, "results_{}".format(model_save_handle))):
+        os.makedirs(os.path.join(args.save_dir, "results_{}".format(model_save_handle)))
 
     all_cors = []
     all_scores = []
@@ -172,13 +182,13 @@ def main(args):
         all_cors.append(cors)
         all_scores.append(scores)
 
-        test_df["{}_correct".format(args.model)] = cors
+        test_df["{}_correct".format(model_save_handle)] = cors
         for j in range(probs.shape[1]):
             choice = choices[j]
-            test_df["{}_choice{}_probs".format(args.model, choice)] = probs[:, j]
+            test_df["{}_choice{}_probs".format(model_save_handle, choice)] = probs[:, j]
         test_df.to_csv(
             os.path.join(
-                args.save_dir, "results_{}".format(args.model), "{}.csv".format(subject)
+                args.save_dir, "results_{}".format(model_save_handle), "{}.csv".format(subject)
             ),
             index=None,
         )
