@@ -7,3 +7,4 @@ batch_outputs/
 hhh_data/
 # hhh_results/
 copy_results/
+*.out
