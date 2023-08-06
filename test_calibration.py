@@ -130,7 +130,7 @@ if __name__ == "__main__":
 
         ax = fig.add_subplot(rows, cols, positions[k])
         ax.bar(bins, accuracies, width=0.1, edgecolor="black", label=f"{LABELS[k]}", color=palette[COLORS[k]], hatch=HATCHES[k])
-        ax.text(0.25, 0.65, f'MSE:{mse:.3f}', fontsize=14, fontweight='semibold', color='black', horizontalalignment='center')
+        ax.text(0.2, 0.65, f'MSE:{mse:.4f}', fontsize=14, fontweight='semibold', color='black', horizontalalignment='center')
 
 
         x_func = np.linspace(0, 1, 1000)
@@ -156,6 +156,9 @@ if __name__ == "__main__":
     plt.title("MSE of Calibration Against $y=x$")
     plt.xlabel("Model")
     plt.ylabel("Calibration MSE")
+    # Add labels above each bar
+    for i, v in enumerate(mses):
+        plt.text(i, v + 0.00015, f"{v:.4f}", color='black', ha='center', fontweight='bold')
     plt.gcf().set_size_inches(8, 5)
     plt.tight_layout()
     plt.savefig(f"{base_dir}/mse_chart", dpi=300)
